@@ -38,7 +38,6 @@
 
     .container { max-width: 820px; margin: 0 auto; padding: 3rem 1.5rem 4rem; }
 
-    /* ───── Nav ───── */
     nav {
       display: flex; justify-content: space-between; align-items: center;
       padding: 1.2rem 0; margin-bottom: 3rem;
@@ -49,12 +48,10 @@
     .logo { font-size: 1.15rem; font-weight: 700; color: var(--text); }
     .logo span { color: var(--accent); }
 
-    /* ───── Hero ───── */
     h1 { font-size: 2.2rem; font-weight: 700; line-height: 1.25; margin-bottom: .8rem; }
     h1 .hl { background: linear-gradient(135deg, var(--accent), var(--green)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
     .subtitle { font-size: .95rem; color: var(--text-muted); max-width: 620px; margin-bottom: 2.5rem; }
 
-    /* ───── Badges ───── */
     .badges { display: flex; gap: .5rem; margin-bottom: 2rem; flex-wrap: wrap; }
     .badge {
       display: inline-flex; align-items: center; gap: .3rem;
@@ -66,7 +63,6 @@
     .badge-open { background: #2a1a3a; color: #c084fc; }
     .badge-heuristic { background: #2a2a1a; color: #facc15; }
 
-    /* ───── CTA ───── */
     .cta { display: flex; gap: 1rem; margin-bottom: 3.5rem; flex-wrap: wrap; }
     .btn {
       display: inline-flex; align-items: center; gap: .45rem;
@@ -79,7 +75,6 @@
     .btn-ghost { background: transparent; color: var(--text-muted); border: 1px solid var(--border); }
     .btn-ghost:hover { color: var(--text); border-color: var(--text-muted); }
 
-    /* ───── Cards ───── */
     section { margin-bottom: 3.5rem; }
     section h2 { font-size: 1.2rem; margin-bottom: 1.2rem; display: flex; align-items: center; gap: .4rem; }
     .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
@@ -128,17 +123,24 @@
     .btn-gen:hover { box-shadow: 0 6px 30px var(--accent-glow); }
     .btn-gen:disabled { opacity: .5; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
 
-    /* ───── Loading / Result ───── */
+    /* ───── Status ───── */
     .status { display: none; margin-top: 1.5rem; }
     .status.show { display: block; }
     .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin .7s linear infinite; vertical-align: middle; margin-right: 8px; }
     @keyframes spin { to { transform: rotate(360deg); } }
     .status-bar { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.2rem; font-size: .82rem; }
-    .status-bar .step { color: var(--text-muted); margin-bottom: .4rem; }
+    .status-bar .step { color: var(--text-muted); margin-bottom: .3rem; transition: color .3s; }
     .status-bar .step.active { color: var(--accent); }
     .status-bar .step.done { color: var(--green); }
     .status-bar .step.failed { color: var(--red); }
+    .error-detail {
+      background: rgba(255,107,107,0.08); border: 1px solid rgba(255,107,107,0.3);
+      border-radius: 6px; padding: .8rem; margin-top: .8rem; font-size: .75rem;
+      color: var(--red); white-space: pre-wrap; word-break: break-word; display: none;
+    }
+    .error-detail.show { display: block; }
 
+    /* ───── Result ───── */
     .result-box { display: none; margin-top: 1.5rem; text-align: center; padding: 2rem; background: var(--surface); border: 1px solid var(--green); border-radius: 10px; }
     .result-box.show { display: block; }
     .result-box .icon { font-size: 2rem; margin-bottom: .5rem; }
@@ -263,15 +265,16 @@
           <div class="step" id="step-analyze"><span class="step-icon">○</span> Analyzing site structure...</div>
           <div class="step" id="step-generate"><span class="step-icon">○</span> Generating skill package...</div>
           <div class="step" id="step-done"><span class="step-icon">○</span> Ready!</div>
-          <div class="step failed" id="step-error"><span class="step-icon">✗</span> <span id="error-msg"></span></div>
+          <div class="step failed" id="step-error" style="display:none;"><span class="step-icon">✗</span> <span id="error-msg"></span></div>
         </div>
+        <div class="error-detail" id="error-detail"></div>
       </div>
 
       <div class="result-box" id="result">
         <div class="icon">🎉</div>
         <h3>Your skill package is ready!</h3>
         <p id="result-desc"></p>
-        <a class="download-btn" id="download-btn" href="#" download>
+        <a class="download-btn" id="download-btn" href="#" download style="display:none;">
           ⬇️ Download ZIP
         </a>
       </div>
@@ -280,8 +283,8 @@
 
   <section>
     <h2>📦 What You Get</h2>
-    <div class="structure" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.5rem;margin:1rem 0;font-size:.78rem;color:var(--text-muted);overflow-x:auto;">
-<pre><span style="color:#ffd700">output/</span>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.5rem;margin:1rem 0;font-size:.78rem;color:var(--text-muted);overflow-x:auto;white-space:pre;">
+<code><span style="color:#ffd700">output/</span>
 ├── <span style="color:#8be9fd">SKILL.md</span>                    ← Hermes skill definition
 ├── <span style="color:#8be9fd">site-map.md</span>                 ← Crawled site structure
 ├── <span style="color:#8be9fd">key-actions.md</span>              ← What agents can do
@@ -290,7 +293,7 @@
 ├── <span style="color:#ffd700">references/</span>
 │   ├── <span style="color:#ffd700">raw-pages/</span>               ← Extracted page content
 │   └── <span style="color:#8be9fd">analysis.json</span>            ← Analysis results
-└── <span style="color:#8be9fd">PACKAGE.md</span>                  ← OpenClaw manifest</pre>
+└── <span style="color:#8be9fd">PACKAGE.md</span>                  ← OpenClaw manifest</code>
     </div>
   </section>
 
@@ -300,11 +303,8 @@
       Prefer the terminal? The tool works standalone too:
     </p>
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.5rem;margin:1rem 0;font-size:.78rem;color:var(--text-muted);overflow-x:auto;white-space:pre;"><code>
-$ python src/website_to_skill.py \
-    --url https://example.com \
-    --format hermes+openclaw \
-    --output ./my-skill
-</code></div>
+$ python src/website_to_skill.py --url https://example.com \
+    --format hermes+openclaw --output ./my-skill</code></div>
   </section>
 
   <footer>
@@ -326,6 +326,40 @@ function setFormat(el) {
   selectedFormat = el.dataset.format;
 }
 
+function showSteps(steps) {
+  const ids = ['step-crawl','step-analyze','step-generate','step-done'];
+  const el = document.getElementById('step-error');
+  el.style.display = 'none';
+  ids.forEach(s => {
+    const e = document.getElementById(s);
+    e.className = 'step';
+    e.querySelector('.step-icon').textContent = '○';
+  });
+  steps.forEach((s, i) => {
+    if (s === 'done') {
+      ids.forEach(id => {
+        document.getElementById(id).classList.add('done');
+        document.getElementById(id).querySelector('.step-icon').textContent = '✓';
+      });
+    } else {
+      document.getElementById(s).classList.add('active');
+      document.getElementById(s).querySelector('.step-icon').textContent = '●';
+    }
+  });
+}
+
+function showError(title, detail) {
+  document.getElementById('step-error').style.display = 'block';
+  document.getElementById('error-msg').textContent = title;
+  const det = document.getElementById('error-detail');
+  if (detail) {
+    det.textContent = detail;
+    det.classList.add('show');
+  } else {
+    det.classList.remove('show');
+  }
+}
+
 async function generate() {
   const url = document.getElementById('url').value.trim();
   const depth = document.getElementById('depth').value;
@@ -335,6 +369,7 @@ async function generate() {
   const statusEl = document.getElementById('status');
 
   errorEl.classList.remove('show');
+  document.getElementById('error-detail').classList.remove('show');
   if (!url || !url.startsWith('http')) {
     errorEl.textContent = 'Please enter a valid URL starting with https://';
     errorEl.classList.add('show');
@@ -345,53 +380,49 @@ async function generate() {
   btn.textContent = '⏳ Generating...';
   statusEl.classList.add('show');
   document.getElementById('result').classList.remove('show');
-
-  const steps = ['step-crawl', 'step-analyze', 'step-generate', 'step-done'];
-  steps.forEach(s => {
-    const el = document.getElementById(s);
-    el.className = 'step';
-    el.querySelector('.step-icon').textContent = '○';
-  });
-  document.getElementById('step-error').style.display = 'none';
+  showSteps(['step-crawl','step-analyze','step-generate']);
 
   try {
     const params = new URLSearchParams({ url, format: selectedFormat, depth, pages });
     const res = await fetch(`/generate?${params.toString()}`, { method: 'POST' });
 
     if (!res.ok) {
-      const err = await res.text();
-      throw new Error(err || `Server error: ${res.status}`);
+      const body = await res.text();
+      // Try to parse JSON error from FastAPI
+      try {
+        const err = JSON.parse(body);
+        showError(err.detail || `Server error: ${res.status}`, err.crawl_errors?.join('\n'));
+      } catch {
+        showError(`Server error: ${res.status}`, body);
+      }
+      throw new Error(body || `Server error: ${res.status}`);
     }
 
     const data = await res.json();
 
-    // Animate steps
-    let i = 0;
-    const animateSteps = () => {
-      if (i >= 3) {
-        document.getElementById('step-done').classList.add('done');
-        document.getElementById('step-done').querySelector('.step-icon').textContent = '✓';
-        return;
-      }
-      const ids = ['step-crawl', 'step-analyze', 'step-generate'];
-      document.getElementById(ids[i]).classList.add('done');
-      document.getElementById(ids[i]).querySelector('.step-icon').textContent = '✓';
-      i++;
-      setTimeout(animateSteps, 400);
-    };
-    animateSteps();
+    // Animate steps → done
+    showSteps(['done']);
 
     const desc = `${data.site_name} — ${data.site_category} — ${data.pages_crawled} pages`;
     document.getElementById('result-desc').textContent = desc;
 
+    if (data.crawl_errors && data.crawl_errors.length) {
+      document.getElementById('error-detail').textContent = 'Crawl notes: ' + data.crawl_errors.join('\n');
+      document.getElementById('error-detail').classList.add('show');
+    }
+
     const dlBtn = document.getElementById('download-btn');
     dlBtn.href = `/download/${data.filename}`;
+    dlBtn.style.display = 'inline-flex';
     document.getElementById('result').classList.add('show');
 
   } catch (e) {
-    console.error(e);
-    document.getElementById('step-error').style.display = 'block';
-    document.getElementById('error-msg').textContent = e.message;
+    if (!e.message.includes('Failed to fetch')) {
+      showError(e.message || 'Unknown error', '');
+    }
+    showSteps(['step-crawl','step-analyze','step-generate']);
+    document.getElementById('step-crawl').classList.add('failed');
+    document.getElementById('step-crawl').querySelector('.step-icon').textContent = '✗';
   } finally {
     btn.disabled = false;
     btn.textContent = '⚡ Generate Skill Package';

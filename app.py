@@ -31,7 +31,6 @@ OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 # ── Heuristic Analyzer ──────────────────────────────
 
-# Classification patterns (URL path segments → site category)
 CATEGORY_PATTERNS = {
     "documentation": ["/docs/", "/doc/", "/documentation/", "/api/", "/reference/", "/guide/", "/tutorial/"],
     "ecommerce":     ["/shop/", "/store/", "/product/", "/cart/", "/checkout/", "/buy/", "/pricing/"],
@@ -39,10 +38,9 @@ CATEGORY_PATTERNS = {
     "saas":          ["/dashboard/", "/app/", "/login/", "/signup/", "/account/", "/settings/", "/workspace/", "/team/"],
     "portfolio":     ["/portfolio/", "/projects/", "/work/", "/about/", "/resume/"],
     "community":     ["/forum/", "/discuss/", "/community/", "/groups/", "/chat/"],
-    "landing":       [],  # default if nothing matches
+    "landing":       [],
 }
 
-# Workflow detection via HTML element patterns
 WORKFLOW_PATTERNS = {
     "search":       ["search", "q", "query", "find", "explore", "lookup"],
     "signup":       ["signup", "register", "create account", "get started", "join", "sign up"],
@@ -59,20 +57,17 @@ WORKFLOW_PATTERNS = {
     "search_filter":["filter", "sort", "refine", "narrow", "category"],
 }
 
-# Feature detection via HTML elements
 FEATURE_SELECTORS = {
-    "live_chat":        ["[data-intercom]", "[data-drift]", ".intercom", ".drift-chat", "#chatbot"],
-    "email_signup":     ["input[type='email']", "input[name*='email']", ".newsletter", ".subscribe-form"],
-    "video_content":    ["video", "iframe[src*='youtube']", "iframe[src*='vimeo']", ".video-player"],
-    "image_gallery":    [".gallery", ".lightbox", ".carousel", "[data-fancybox]", ".swiper"],
-    "maps_integration": ["iframe[src*='maps']", ".map-container", "#map", "[data-map]"],
-    "social_feeds":     [".twitter-timeline", ".instagram-feed", ".social-feed", "[data-social]"],
-    "payment_form":     ["[data-stripe]", ".payment-form", "#checkout", "[data-paypal]"],
-    "analytics":        ["[data-analytics]", ".tracking", "[data-gtm]", "#gtag"],
+    "live_chat":        ["chat", "intercom", "drift", "chatbot", "live chat", "zendesk chat"],
+    "email_signup":     ["subscribe", "newsletter", "email signup", "mailing list"],
+    "video_content":    ["video", "watch", "youtube", "vimeo", "player"],
+    "image_gallery":    ["gallery", "lightbox", "carousel", "swiper"],
+    "maps_integration": ["map", "location", "directions"],
+    "social_feeds":     ["twitter-timeline", "instagram-feed", "social-feed"],
+    "payment_form":     ["pay", "credit card", "checkout", "stripe", "paypal"],
 }
 
-# SEO keywords extraction: most common meaningful words from content
-STOP_WORDS = set("the a an and or but in on at to for of is it this that was are were be been being have has had do does did will would shall should may might can could with from by as into through during before after above below between out off over under again further then once here there when where why how all each every both few more most other some such no nor not only own same so than too very s t d ll m re ve y ain t don shouldn wouldn isn aren wasn weren hasn haven hadn hadn ma shan shan".split())
+STOP_WORDS = set("the a an and or but in on at to for of is it this that was are were be been being have has had do does did will would shall should may might can could with from by as into through during before after above below between out off over under again further then once here there when where why how all each every both few more most other some such no nor not only own same so than too very s t d ll m re ve y ain t don shouldn wouldn isn aren wasn weren hasn haven hadn ma shan".split())
 
 
 def analyze_heuristic(pages, site_url):
@@ -80,7 +75,7 @@ def analyze_heuristic(pages, site_url):
 
     url_parsed = urlparse(site_url)
     domain = url_parsed.netloc.replace("www.", "")
-    
+
     # ── 1. Classify site ────────────────────────────
     all_paths = [urlparse(p["url"]).path for p in pages]
     category_scores = Counter()
@@ -93,7 +88,6 @@ def analyze_heuristic(pages, site_url):
     if category_scores:
         site_category = category_scores.most_common(1)[0][0]
     elif pages:
-        # Fallback: check HTML content signals
         html_sigs = {
             "saas": 0, "ecommerce": 0, "blog": 0, "documentation": 0,
         }
@@ -116,32 +110,12 @@ def analyze_heuristic(pages, site_url):
 
     # ── 2. Detect features ──────────────────────────
     detected_features = []
-    for feat, selectors in FEATURE_SELECTORS.items():
+    for feat, keywords in FEATURE_SELECTORS.items():
         for p in pages:
-            html = ""
-            try:
-                # Re-fetch would be costly; we just use content we have
-                # But trafilatura strips HTML tags, so we'd need the raw HTML
-                # For now, we do a text-based search on content
-                content_lower = p.get("content", "").lower()
-                # Simple text-based proxies
-                if feat == "live_chat" and any(w in content_lower for w in ["chat", "intercom", "drift", "chatbot", "live chat"]):
-                    detected_features.append(feat)
-                    break
-                elif feat == "email_signup" and any(w in content_lower for w in ["subscribe", "newsletter", "email signup"]):
-                    detected_features.append(feat)
-                    break
-                elif feat == "video_content" and any(w in content_lower for w in ["video", "watch", "youtube", "vimeo"]):
-                    detected_features.append(feat)
-                    break
-                elif feat == "maps_integration" and any(w in content_lower for w in ["map", "location", "directions"]):
-                    detected_features.append(feat)
-                    break
-                elif feat == "payment_form" and any(w in content_lower for w in ["pay", "credit card", "checkout", "stripe", "paypal"]):
-                    detected_features.append(feat)
-                    break
-            except:
-                pass
+            content_lower = p.get("content", "").lower()
+            if any(kw in content_lower for kw in keywords):
+                detected_features.append(feat)
+                break
 
     # ── 3. Detect workflows ─────────────────────────
     detected_workflows = []
@@ -154,51 +128,53 @@ def analyze_heuristic(pages, site_url):
                 if kw in text or kw in title or kw.split()[0] in url:
                     detected_workflows.append(wf)
                     break
-            if wf in detected_workflows:
-                break
-    detected_workflows = list(dict.fromkeys(detected_workflows))  # dedupe, preserve order
+        if wf in detected_workflows:
+            break
+    seen = set()
+    deduped = []
+    for w in detected_workflows:
+        if w not in seen:
+            seen.add(w)
+            deduped.append(w)
+    detected_workflows = deduped
 
     # ── 4. Extract interaction points ───────────────
     interaction_points = []
-    for p in pages[:10]:  # Limit to first 10 pages for performance
+    seen_actions = set()
+    for p in pages[:10]:
         url = p["url"]
-        # Check for forms
-        if "form" in p.get("content", "").lower():
+        content_lower = p.get("content", "").lower()
+        if "form" in content_lower and "submit form" not in seen_actions:
             interaction_points.append({
                 "action": "Submit form",
                 "how": "HTML form on this page — may include contact, signup, or search forms",
                 "url": url
             })
-        # Check for search
-        if any(kw in (p.get("title","") + p.get("content","")).lower() for kw in ["search", "find", "lookup", "explore"]):
+            seen_actions.add("submit form")
+        if any(kw in (p.get("title","") + content_lower) for kw in ["search", "find", "lookup", "explore"]) and "search content" not in seen_actions:
             interaction_points.append({
                 "action": "Search content",
-                "how": "Search input or filter functionality detected on this page",
+                "how": "Search input or filter functionality detected",
                 "url": url
             })
-        # Check for links to external services
-        links = [l for l in (p.get("content","")).split() if "http" in l]
-        if links:
+            seen_actions.add("search content")
+        http_links = [w for w in content_lower.split() if w.startswith("http")]
+        if http_links and "follow external links" not in seen_actions:
             interaction_points.append({
                 "action": "Follow external links",
-                "how": f"Page contains links to external resources",
+                "how": "Page contains links to external resources",
                 "url": url
             })
-
-    # Dedupe interaction points by action
-    seen_actions = set()
-    unique_points = []
-    for pt in interaction_points:
-        if pt["action"] not in seen_actions:
-            seen_actions.add(pt["action"])
-            unique_points.append(pt)
+            seen_actions.add("follow external links")
+    interaction_points = interaction_points[:10]
 
     # ── 5. Detect agent use cases ───────────────────
     use_cases = [
         f"Browse and extract information from {domain}",
-        f"Monitor content changes on {domain}",
-        f"Answer questions about {domain}'s content and features",
     ]
+    if len(pages) > 3:
+        use_cases.append(f"Monitor content changes on {domain}")
+    use_cases.append(f"Answer questions about {domain}'s content and features")
     if "blog" in site_category:
         use_cases.append("Summarize latest blog posts and topics")
     if "documentation" in site_category:
@@ -215,13 +191,11 @@ def analyze_heuristic(pages, site_url):
     words = re.findall(r"[a-z][a-z'-]{2,}", all_content)
     word_counts = Counter(w for w in words if w not in STOP_WORDS and len(w) > 2)
     total = sum(word_counts.values()) or 1
-    # Score = frequency * length (prefer longer, more specific words)
     scored = {w: (count / total) * min(len(w), 10) for w, count in word_counts.most_common(100)}
     seo_keywords = [w for w, _ in sorted(scored.items(), key=lambda x: -x[1])[:15]]
 
     # ── 7. Title and purpose ────────────────────────
     site_name = domain.title()
-    # Check if site has an actual name in meta
     for p in pages:
         title = p.get("title", "").strip()
         if title and len(title) < 80 and not title.lower().startswith("domain"):
@@ -230,8 +204,8 @@ def analyze_heuristic(pages, site_url):
 
     purpose_map = {
         "blog": f"Blog publishing content about {seo_keywords[0] if seo_keywords else 'various topics'}",
-        "ecommerce": f"Ecommerce store selling products",
-        "documentation": f"Documentation and reference for developers",
+        "ecommerce": "Ecommerce store selling products online",
+        "documentation": "Documentation and reference for developers",
         "saas": f"SaaS application for {seo_keywords[0] if seo_keywords else 'productivity'}",
         "portfolio": "Personal portfolio showcasing work and projects",
         "community": "Community platform for discussion",
@@ -240,22 +214,17 @@ def analyze_heuristic(pages, site_url):
     site_purpose = purpose_map.get(site_category, f"Website at {site_url}")
 
     # ── 8. Key features ────────────────────────────
-    features = []
-    feat_map = {
+    feat_labels = {
+        "live_chat": "Live chat / customer support widget",
         "email_signup": "Email subscription / signup forms",
-        "search": "Search functionality",
         "video_content": "Video content embedding",
         "image_gallery": "Image gallery / carousel",
         "maps_integration": "Interactive maps / location display",
         "social_feeds": "Social media feed integration",
         "payment_form": "Online payment processing",
-        "live_chat": "Live chat / customer support widget",
     }
-    for feat in detected_features:
-        if feat in feat_map:
-            features.append(feat_map[feat])
+    features = [feat_labels[f] for f in detected_features if f in feat_labels]
 
-    # Add workflow-based features
     wf_labels = {
         "signup": "User account creation / signup flow",
         "login": "User authentication / login",
@@ -283,7 +252,7 @@ def analyze_heuristic(pages, site_url):
         "site_category": site_category,
         "key_features": features,
         "workflows": detected_workflows,
-        "interaction_points": unique_points[:10],
+        "interaction_points": interaction_points,
         "agent_use_cases": use_cases,
         "seo_keywords": seo_keywords,
         "has_api": False,
@@ -296,7 +265,7 @@ def analyze_heuristic(pages, site_url):
 # ── Crawler ──────────────────────────────────────────
 
 class Crawler:
-    def __init__(self, base_url, max_depth=2, max_pages=30, delay=0.3):
+    def __init__(self, base_url, max_depth=2, max_pages=30, delay=0.5):
         self.base_url = base_url.rstrip("/")
         self.domain = urlparse(base_url).netloc
         self.max_depth = max_depth
@@ -304,9 +273,15 @@ class Crawler:
         self.delay = delay
         self.visited = set()
         self.pages = []
+        self.errors = []
         self.client = httpx.Client(
-            timeout=30, follow_redirects=True,
-            headers={"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"},
+            timeout=httpx.Timeout(20.0, connect=10.0),
+            follow_redirects=True,
+            headers={
+                "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                "Accept-Language": "en-US,en;q=0.5",
+            },
         )
 
     def is_crawlable(self, url):
@@ -314,7 +289,8 @@ class Crawler:
         if p.scheme not in ("http", "https"): return False
         if p.netloc != self.domain: return False
         skip = (".pdf", ".jpg", ".jpeg", ".png", ".gif", ".svg", ".css", ".js",
-                ".zip", ".tar", ".gz", ".mp3", ".mp4", ".ico", ".woff", ".woff2", ".ttf", ".json", ".xml", ".txt", ".csv")
+                ".zip", ".tar", ".gz", ".mp3", ".mp4", ".ico", ".woff", ".woff2", ".ttf",
+                ".json", ".xml", ".txt", ".csv", ".xlsx", ".webp")
         if any(url.lower().endswith(e) for e in skip): return False
         return True
 
@@ -333,31 +309,48 @@ class Crawler:
     def fetch_page(self, url):
         try:
             resp = self.client.get(url)
-            if resp.status_code != 200: return None
+            if resp.status_code >= 400:
+                self.errors.append(f"HTTP {resp.status_code} on {url}")
+                return None
             ct = resp.headers.get("content-type", "")
-            if "text/html" not in ct: return None
+            if "text/html" not in ct:
+                self.errors.append(f"Non-HTML content ({ct}) on {url}")
+                return None
             html = resp.text
-
-            soup = BeautifulSoup(html, "lxml")
-
-            # Check noindex
-            robots = soup.find("meta", attrs={"name": "robots"})
-            if robots and "noindex" in robots.get("content", "").lower(): return None
-
-            # Check nofollow
-            robots_meta = soup.find("meta", attrs={"name": "robots"})
-            if robots_meta and "nofollow" in robots_meta.get("content", "").lower():
+            if len(html) < 200:
+                self.errors.append(f"Page too small ({len(html)} bytes) on {url}")
                 return None
 
+            soup = BeautifulSoup(html, "lxml")
+            robots = soup.find("meta", attrs={"name": "robots"})
+            if robots:
+                rcontent = robots.get("content", "").lower()
+                if "noindex" in rcontent:
+                    self.errors.append(f"noindex on {url}")
+                    return None
+
             text = trafilatura.extract(html, include_links=False, include_tables=True) or ""
+            if len(text.strip()) < 50:
+                self.errors.append(f"Too little content extracted from {url}")
+                # Still return it — let the caller decide
+
             title = soup.title.string.strip() if soup.title and soup.title.string else ""
-            
             desc = ""
             d = soup.find("meta", attrs={"name": "description"})
             if d: desc = d.get("content", "").strip()
+            return {"url": url, "title": title, "description": desc, "content": text.strip()}
 
-            return {"url": url, "title": title, "description": desc, "content": text.strip(), "html": html}
+        except httpx.TimeoutException:
+            self.errors.append(f"Timeout on {url}")
+            return None
+        except httpx.ConnectError:
+            self.errors.append(f"Connection refused on {url}")
+            return None
+        except httpx.TooManyRedirects:
+            self.errors.append(f"Too many redirects on {url}")
+            return None
         except Exception as e:
+            self.errors.append(f"{type(e).__name__}: {str(e)[:100]} on {url}")
             return None
 
     def crawl(self, log_fn=None):
@@ -372,18 +365,16 @@ class Crawler:
             if page:
                 self.pages.append(page)
                 if depth < self.max_depth:
-                    links = self.extract_links(page["html"], url)
-                    page["links"] = list(links)
-                    for link in links:
-                        if link not in self.visited:
-                            queue.append((link, depth + 1))
+                    try:
+                        resp = self.client.get(url)
+                        links = self.extract_links(resp.text, url)
+                        page["_links"] = list(links)
+                        for link in links:
+                            if link not in self.visited:
+                                queue.append((link, depth + 1))
+                    except Exception:
+                        pass
             time.sleep(self.delay)
-
-        # Clean up HTML from pages (not needed in output)
-        for p in self.pages:
-            p.pop("html", None)
-            p.pop("links", None)
-
         return self.pages
 
 
@@ -397,7 +388,7 @@ def generate_skill_md(analysis, pages, site_url):
     safe = safe_name(name)
     features = "\n".join(f"- {f}" for f in analysis.get("key_features", [])) or "- Browse and extract information"
     workflows = "\n".join(f"- {w}" for w in analysis.get("workflows", [])) or "- Navigate site pages\n- Extract content and data"
-    use_cases = "\n".join(f"- {u}" for u in analysis.get("agent_use_cases", [])) or "- Browse the site and extract relevant information\n- Answer questions about the site's content"
+    use_cases = "\n".join(f"- {u}" for u in analysis.get("agent_use_cases", [])) or "- Browse the site and extract relevant information"
     keywords = ", ".join(analysis.get("seo_keywords", [])[:10])
 
     page_table = ""
@@ -478,7 +469,6 @@ and help users with questions about its content and features.
 def generate_openclaw_package(analysis, pages, site_url):
     name = analysis.get("site_name", "Website Agent")
     safe = safe_name(name)
-    workflows_str = ", ".join(analysis.get("workflows", [])[:5]) or "site browsing"
 
     pkg = f"""# Package: {safe}
 
@@ -565,7 +555,6 @@ def generate_endpoint(
     depth: int = Query(2),
     pages: int = Query(20),
 ):
-    # Validate URL
     parsed = urlparse(url)
     if not parsed.scheme:
         url = "https://" + url
@@ -587,7 +576,8 @@ def generate_endpoint(
     pages_data = crawler.crawl(log_fn=log)
 
     if not pages_data:
-        raise HTTPException(500, "No pages could be crawled. Check the URL.")
+        error_detail = "; ".join(crawler.errors) if crawler.errors else "Unknown error"
+        raise HTTPException(502, f"No pages could be crawled. Errors: {error_detail}")
 
     log(f"✅ Crawled {len(pages_data)} pages")
 
@@ -605,7 +595,6 @@ def generate_endpoint(
         skill = generate_skill_md(analysis, pages_data, url)
         (output_dir / "SKILL.md").write_text(skill)
 
-        # References
         (output_dir / "references").mkdir(exist_ok=True)
         (output_dir / "raw-pages").mkdir(exist_ok=True)
 
@@ -657,6 +646,7 @@ def generate_endpoint(
         "pages_crawled": len(pages_data),
         "site_name": analysis.get("site_name", "Unknown"),
         "site_category": analysis.get("site_category", "Unknown"),
+        "crawl_errors": crawler.errors,
         "results": results,
     })
 
