@@ -1,7 +1,6 @@
 beautifulsoup4>=4.14.0
 lxml>=6.1.0
 trafilatura>=2.0.0
-openai>=2.36.0
 httpx>=0.28.0
 fastapi>=0.115.0
 uvicorn>=0.35.0

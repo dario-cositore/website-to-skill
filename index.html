@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Website → Agent Skill | Dario Cositore</title>
-  <meta name="description" content="Convert any website into a Hermes Agent Skill or OpenClaw Agent Package. Paste a URL, click Generate, download your agent skill. Free, open source, MIT licensed.">
+  <meta name="description" content="Convert any website into a Hermes Agent Skill or OpenClaw Agent Package. Paste a URL, click Generate, download your agent skill. Free, open source, no API key needed.">
   <meta name="keywords" content="AI agent, agent skill, OpenClaw, Hermes, web scraper, tool, website, automation">
   <style>
     @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&display=swap');
@@ -54,6 +54,18 @@
     h1 .hl { background: linear-gradient(135deg, var(--accent), var(--green)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
     .subtitle { font-size: .95rem; color: var(--text-muted); max-width: 620px; margin-bottom: 2.5rem; }
 
+    /* ───── Badges ───── */
+    .badges { display: flex; gap: .5rem; margin-bottom: 2rem; flex-wrap: wrap; }
+    .badge {
+      display: inline-flex; align-items: center; gap: .3rem;
+      padding: .25rem .6rem; border-radius: 4px;
+      font-size: .68rem; font-weight: 600; text-transform: uppercase; letter-spacing: .05em;
+    }
+    .badge-free { background: #1a3a2a; color: #4ade80; }
+    .badge-python { background: #1a2a3a; color: #60a5fa; }
+    .badge-open { background: #2a1a3a; color: #c084fc; }
+    .badge-heuristic { background: #2a2a1a; color: #facc15; }
+
     /* ───── CTA ───── */
     .cta { display: flex; gap: 1rem; margin-bottom: 3.5rem; flex-wrap: wrap; }
     .btn {
@@ -66,13 +78,6 @@
     .btn-purple:hover { background: var(--accent-hover); transform: translateY(-1px); box-shadow: 0 4px 20px var(--accent-glow); }
     .btn-ghost { background: transparent; color: var(--text-muted); border: 1px solid var(--border); }
     .btn-ghost:hover { color: var(--text); border-color: var(--text-muted); }
-    .btn-gen {
-      width: 100%; padding: .9rem 2rem; font-size: 1rem;
-      background: linear-gradient(135deg, var(--accent), #a78bfa);
-      color: #fff; border-radius: 10px; justify-content: center;
-    }
-    .btn-gen:hover { box-shadow: 0 6px 30px var(--accent-glow); }
-    .btn-gen:disabled { opacity: .5; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
 
     /* ───── Cards ───── */
     section { margin-bottom: 3.5rem; }
@@ -115,7 +120,13 @@
     .format-toggle.active { border-color: var(--accent); color: var(--accent); background: var(--accent-glow); }
     .format-toggle:hover:not(.active) { border-color: var(--text-muted); color: var(--text); }
 
-    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .btn-gen {
+      width: 100%; padding: .9rem 2rem; font-size: 1rem;
+      background: linear-gradient(135deg, var(--accent), #a78bfa);
+      color: #fff; border-radius: 10px; justify-content: center;
+    }
+    .btn-gen:hover { box-shadow: 0 6px 30px var(--accent-glow); }
+    .btn-gen:disabled { opacity: .5; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
 
     /* ───── Loading / Result ───── */
     .status { display: none; margin-top: 1.5rem; }
@@ -123,12 +134,10 @@
     .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin .7s linear infinite; vertical-align: middle; margin-right: 8px; }
     @keyframes spin { to { transform: rotate(360deg); } }
     .status-bar { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.2rem; font-size: .82rem; }
-    .status-bar .step { color: var(--text-muted); }
+    .status-bar .step { color: var(--text-muted); margin-bottom: .4rem; }
     .status-bar .step.active { color: var(--accent); }
     .status-bar .step.done { color: var(--green); }
     .status-bar .step.failed { color: var(--red); }
-    .status-bar .step-icon { margin-right: 6px; }
-    .status-bar pre { background: var(--surface-2); padding: .8rem; border-radius: 6px; margin-top: .8rem; font-size: .75rem; overflow-x: auto; max-height: 200px; color: var(--text-muted); white-space: pre-wrap; word-break: break-all; display: none; }
 
     .result-box { display: none; margin-top: 1.5rem; text-align: center; padding: 2rem; background: var(--surface); border: 1px solid var(--green); border-radius: 10px; }
     .result-box.show { display: block; }
@@ -144,14 +153,7 @@
     }
     .download-btn:hover { background: #00e6b8; transform: translateY(-1px); }
 
-    /* ───── Structure Preview ───── */
-    .structure {
-      background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
-      padding: 1.5rem; margin: 1rem 0; font-size: .78rem; color: var(--text-muted);
-    }
-    .structure pre { white-space: pre; overflow-x: auto; }
-    .structure .f { color: #ffd700; }
-    .structure .d { color: #8be9fd; }
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
 
     footer { text-align: center; padding: 2rem 0; margin-top: 3rem; border-top: 1px solid var(--border); color: var(--text-muted); font-size: .78rem; }
     footer a { color: var(--accent); text-decoration: none; }
@@ -176,8 +178,15 @@
   <p class="subtitle">
     Paste a URL. Pick your format. Click generate. Download a ready-to-deploy
     <strong>Hermes Agent Skill</strong> or <strong>OpenClaw Agent Package</strong>.
-    Fully automated, LLM-powered, open source.
+    <strong>No API key.</strong> No LLM costs. Pure heuristic analysis.
   </p>
+
+  <div class="badges">
+    <span class="badge badge-free">100% Free</span>
+    <span class="badge badge-heuristic">No LLM Needed</span>
+    <span class="badge badge-python">Python</span>
+    <span class="badge badge-open">MIT Open Source</span>
+  </div>
 
   <div class="cta">
     <a href="https://github.com/dario-cositore/website-to-skill" class="btn btn-purple">⭐ Star on GitHub</a>
@@ -192,8 +201,8 @@
         <p>Follows sitemaps + links recursively. Respects robots.txt, noindex, and rate limits. Filters binary files automatically.</p>
       </div>
       <div class="card">
-        <h3>🧠 LLM Analysis</h3>
-        <p>Classifies the site, extracts workflows, maps interaction points, and identifies agent use cases. Works with OpenRouter or any OpenAI-compatible provider.</p>
+        <h3>🔍 Heuristic Analysis</h3>
+        <p>Classifies the site, extracts workflows, maps interaction points, and identifies agent use cases using HTML structure and content patterns. Zero API costs.</p>
       </div>
       <div class="card">
         <h3>⚙️ Hermes Output</h3>
@@ -227,27 +236,9 @@
 
       <div class="two-col">
         <div class="form-row">
-          <label>LLM Provider Base URL</label>
-          <input type="url" id="provider" placeholder="https://openrouter.ai/api/v1">
-          <small>Leave blank to use default (OpenRouter)</small>
-        </div>
-        <div class="form-row">
-          <label>Model</label>
-          <select id="model">
-            <option value="deepseek/deepseek-v4-pro">DeepSeek V4 Pro</option>
-            <option value="openai/gpt-5.4">GPT-5.4</option>
-            <option value="openai/gpt-4.1">GPT-4.1</option>
-            <option value="anthropic/claude-sonnet-4">Claude Sonnet 4</option>
-            <option value="google/gemini-2.5-pro">Gemini 2.5 Pro</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="two-col">
-        <div class="form-row">
           <label>Max Crawl Depth</label>
           <select id="depth">
-            <option value="1">1 (just root page)</option>
+            <option value="1">1 (root page only)</option>
             <option value="2" selected>2 (recommended)</option>
             <option value="3">3 (deep)</option>
           </select>
@@ -269,12 +260,11 @@
       <div class="status" id="status">
         <div class="status-bar" id="status-bar">
           <div class="step" id="step-crawl"><span class="step-icon">○</span> Crawling website...</div>
-          <div class="step" id="step-analyze"><span class="step-icon">○</span> Analyzing with LLM...</div>
+          <div class="step" id="step-analyze"><span class="step-icon">○</span> Analyzing site structure...</div>
           <div class="step" id="step-generate"><span class="step-icon">○</span> Generating skill package...</div>
           <div class="step" id="step-done"><span class="step-icon">○</span> Ready!</div>
           <div class="step failed" id="step-error"><span class="step-icon">✗</span> <span id="error-msg"></span></div>
         </div>
-        <pre id="log-output"></pre>
       </div>
 
       <div class="result-box" id="result">
@@ -290,17 +280,17 @@
 
   <section>
     <h2>📦 What You Get</h2>
-    <div class="structure">
-<pre><span class="f">output/</span>
-├── <span class="d">SKILL.md</span>                    ← Hermes skill definition
-├── <span class="d">site-map.md</span>                 ← Crawled site structure
-├── <span class="d">key-actions.md</span>              ← What agents can do
-├── <span class="d">interaction-guide.md</span>        ← How to interact
-├── <span class="d">identity.md</span>                 ← Agent identity
-├── <span class="f">references/</span>
-│   ├── <span class="f">raw-pages/</span>               ← Extracted page content
-│   └── <span class="d">analysis.json</span>            ← LLM analysis
-└── <span class="d">PACKAGE.md</span>                  ← OpenClaw manifest</pre>
+    <div class="structure" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.5rem;margin:1rem 0;font-size:.78rem;color:var(--text-muted);overflow-x:auto;">
+<pre><span style="color:#ffd700">output/</span>
+├── <span style="color:#8be9fd">SKILL.md</span>                    ← Hermes skill definition
+├── <span style="color:#8be9fd">site-map.md</span>                 ← Crawled site structure
+├── <span style="color:#8be9fd">key-actions.md</span>              ← What agents can do
+├── <span style="color:#8be9fd">interaction-guide.md</span>        ← How to interact
+├── <span style="color:#8be9fd">identity.md</span>                 ← Agent identity
+├── <span style="color:#ffd700">references/</span>
+│   ├── <span style="color:#ffd700">raw-pages/</span>               ← Extracted page content
+│   └── <span style="color:#8be9fd">analysis.json</span>            ← Analysis results
+└── <span style="color:#8be9fd">PACKAGE.md</span>                  ← OpenClaw manifest</pre>
     </div>
   </section>
 
@@ -309,10 +299,12 @@
     <p style="font-size:.85rem;color:var(--text-muted);margin-bottom:1rem;">
       Prefer the terminal? The tool works standalone too:
     </p>
-    <div class="structure"><pre><span class="d">$</span> python src/website_to_skill.py \
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.5rem;margin:1rem 0;font-size:.78rem;color:var(--text-muted);overflow-x:auto;white-space:pre;"><code>
+$ python src/website_to_skill.py \
     --url https://example.com \
     --format hermes+openclaw \
-    --output ./my-skill</pre></div>
+    --output ./my-skill
+</code></div>
   </section>
 
   <footer>
@@ -336,15 +328,12 @@ function setFormat(el) {
 
 async function generate() {
   const url = document.getElementById('url').value.trim();
-  const provider = document.getElementById('provider').value.trim();
-  const model = document.getElementById('model').value;
   const depth = document.getElementById('depth').value;
   const pages = document.getElementById('pages').value;
   const errorEl = document.getElementById('url-error');
   const btn = document.getElementById('generate-btn');
   const statusEl = document.getElementById('status');
 
-  // Validate
   errorEl.classList.remove('show');
   if (!url || !url.startsWith('http')) {
     errorEl.textContent = 'Please enter a valid URL starting with https://';
@@ -352,7 +341,6 @@ async function generate() {
     return;
   }
 
-  // UI state
   btn.disabled = true;
   btn.textContent = '⏳ Generating...';
   statusEl.classList.add('show');
@@ -360,18 +348,14 @@ async function generate() {
 
   const steps = ['step-crawl', 'step-analyze', 'step-generate', 'step-done'];
   steps.forEach(s => {
-    document.getElementById(s).className = 'step';
-    document.getElementById(s).querySelector('.step-icon').textContent = '○';
+    const el = document.getElementById(s);
+    el.className = 'step';
+    el.querySelector('.step-icon').textContent = '○';
   });
   document.getElementById('step-error').style.display = 'none';
-  document.getElementById('log-output').textContent = 'Starting...\n';
 
   try {
     const params = new URLSearchParams({ url, format: selectedFormat, depth, pages });
-    if (provider) params.set('provider', provider);
-    if (model) params.set('model', model);
-
-    // Start generation
     const res = await fetch(`/generate?${params.toString()}`, { method: 'POST' });
 
     if (!res.ok) {
@@ -379,34 +363,35 @@ async function generate() {
       throw new Error(err || `Server error: ${res.status}`);
     }
 
-    // Stream progress updates via SSE or read JSON response
     const data = await res.json();
 
-    // Mark steps done
-    document.getElementById('step-crawl').classList.add('done');
-    document.getElementById('step-crawl').querySelector('.step-icon').textContent = '✓';
-    document.getElementById('step-analyze').classList.add('done');
-    document.getElementById('step-analyze').querySelector('.step-icon').textContent = '✓';
-    document.getElementById('step-generate').classList.add('done');
-    document.getElementById('step-generate').querySelector('.step-icon').textContent = '✓';
-    document.getElementById('step-done').classList.add('done');
-    document.getElementById('step-done').querySelector('.step-icon').textContent = '✓';
+    // Animate steps
+    let i = 0;
+    const animateSteps = () => {
+      if (i >= 3) {
+        document.getElementById('step-done').classList.add('done');
+        document.getElementById('step-done').querySelector('.step-icon').textContent = '✓';
+        return;
+      }
+      const ids = ['step-crawl', 'step-analyze', 'step-generate'];
+      document.getElementById(ids[i]).classList.add('done');
+      document.getElementById(ids[i]).querySelector('.step-icon').textContent = '✓';
+      i++;
+      setTimeout(animateSteps, 400);
+    };
+    animateSteps();
 
-    // Show result
-    document.getElementById('result-desc').textContent =
-      `${data.filename} — ${data.format} — ${data.pages_crawled} pages crawled`;
+    const desc = `${data.site_name} — ${data.site_category} — ${data.pages_crawled} pages`;
+    document.getElementById('result-desc').textContent = desc;
 
     const dlBtn = document.getElementById('download-btn');
     dlBtn.href = `/download/${data.filename}`;
-    dlBtn.style.display = 'inline-flex';
-
     document.getElementById('result').classList.add('show');
 
   } catch (e) {
     console.error(e);
     document.getElementById('step-error').style.display = 'block';
     document.getElementById('error-msg').textContent = e.message;
-    document.getElementById('log-output').textContent += `\n❌ Error: ${e.message}`;
   } finally {
     btn.disabled = false;
     btn.textContent = '⚡ Generate Skill Package';
