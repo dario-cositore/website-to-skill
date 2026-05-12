@@ -19,6 +19,7 @@ from urllib.parse import urljoin, urlparse
 from collections import Counter
 
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 import httpx
 from bs4 import BeautifulSoup
@@ -28,6 +29,24 @@ import trafilatura
 
 OUTPUT_DIR = Path(os.environ.get("OUTPUT_DIR", "./generated"))
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
+# ── CORS ─────────────────────────────────────────────
+# Allow all origins so the tool works in any deployment scenario
+
+ALLOWED_ORIGINS = os.environ.get("ALLOWED_ORIGINS", "*").split(",")
+
+app = FastAPI(
+    title="Website → Agent Skill",
+    description="Convert any website into a Hermes Agent Skill or OpenClaw Agent Package.",
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=ALLOWED_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # ── Heuristic Analyzer ──────────────────────────────
 
@@ -88,9 +107,7 @@ def analyze_heuristic(pages, site_url):
     if category_scores:
         site_category = category_scores.most_common(1)[0][0]
     elif pages:
-        html_sigs = {
-            "saas": 0, "ecommerce": 0, "blog": 0, "documentation": 0,
-        }
+        html_sigs = {"saas": 0, "ecommerce": 0, "blog": 0, "documentation": 0}
         for p in pages:
             text = p.get("content", "").lower()
             if any(w in text for w in ["login", "signup", "dashboard", "workspace"]):
@@ -101,10 +118,7 @@ def analyze_heuristic(pages, site_url):
                 html_sigs["blog"] += 1
             if any(w in text for w in ["api", "installation", "usage", "parameters", "returns"]):
                 html_sigs["documentation"] += 1
-        if any(html_sigs.values()):
-            site_category = max(html_sigs, key=html_sigs.get)
-        else:
-            site_category = "landing"
+        site_category = max(html_sigs, key=html_sigs.get) if any(html_sigs.values()) else "landing"
     else:
         site_category = "landing"
 
@@ -169,9 +183,7 @@ def analyze_heuristic(pages, site_url):
     interaction_points = interaction_points[:10]
 
     # ── 5. Detect agent use cases ───────────────────
-    use_cases = [
-        f"Browse and extract information from {domain}",
-    ]
+    use_cases = [f"Browse and extract information from {domain}"]
     if len(pages) > 3:
         use_cases.append(f"Monitor content changes on {domain}")
     use_cases.append(f"Answer questions about {domain}'s content and features")
@@ -330,10 +342,6 @@ class Crawler:
                     return None
 
             text = trafilatura.extract(html, include_links=False, include_tables=True) or ""
-            if len(text.strip()) < 50:
-                self.errors.append(f"Too little content extracted from {url}")
-                # Still return it — let the caller decide
-
             title = soup.title.string.strip() if soup.title and soup.title.string else ""
             desc = ""
             d = soup.find("meta", attrs={"name": "description"})

@@ -86,6 +86,17 @@
     .card h3 { font-size: .88rem; margin-bottom: .4rem; color: var(--green); }
     .card p { font-size: .78rem; color: var(--text-muted); line-height: 1.55; }
 
+    /* Warning banner for file:// usage */
+    .warning-banner {
+      background: rgba(255,107,107,0.1); border: 1px solid rgba(255,107,107,0.4);
+      border-radius: 8px; padding: 1rem 1.2rem; margin-bottom: 1.5rem;
+      font-size: .8rem; color: var(--red); display: none;
+    }
+    .warning-banner.show { display: block; }
+    .warning-banner code {
+      background: rgba(255,255,255,0.08); padding: .15rem .4rem; border-radius: 3px; font-size: .75rem;
+    }
+
     /* ───── Tool ───── */
     .tool-box {
       background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
@@ -119,6 +130,7 @@
       width: 100%; padding: .9rem 2rem; font-size: 1rem;
       background: linear-gradient(135deg, var(--accent), #a78bfa);
       color: #fff; border-radius: 10px; justify-content: center;
+      cursor: pointer;
     }
     .btn-gen:hover { box-shadow: 0 6px 30px var(--accent-glow); }
     .btn-gen:disabled { opacity: .5; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
@@ -193,6 +205,13 @@
   <div class="cta">
     <a href="https://github.com/dario-cositore/website-to-skill" class="btn btn-purple">⭐ Star on GitHub</a>
     <a href="#tool" class="btn btn-ghost">🔧 Use the tool</a>
+  </div>
+
+  <!-- Warning shown when opened as file:// -->
+  <div class="warning-banner" id="file-warning">
+    ⚠️ <strong>You opened this as a local file.</strong> The tool needs a running server to work.
+    Run: <code>python src/website_to_skill.py</code> or <code>python app.py</code>, then open
+    <code>http://localhost:8888</code>
   </div>
 
   <section id="features">
@@ -318,6 +337,13 @@ $ python src/website_to_skill.py --url https://example.com \
 </div>
 
 <script>
+// Detect file:// protocol and warn
+if (location.protocol === 'file:') {
+  document.getElementById('file-warning').classList.add('show');
+}
+
+const API_BASE = location.protocol === 'file:' ? 'http://localhost:8888' : '';
+
 let selectedFormat = 'hermes+openclaw';
 
 function setFormat(el) {
@@ -384,11 +410,10 @@ async function generate() {
 
   try {
     const params = new URLSearchParams({ url, format: selectedFormat, depth, pages });
-    const res = await fetch(`/generate?${params.toString()}`, { method: 'POST' });
+    const res = await fetch(`${API_BASE}/generate?${params.toString()}`, { method: 'POST' });
 
     if (!res.ok) {
       const body = await res.text();
-      // Try to parse JSON error from FastAPI
       try {
         const err = JSON.parse(body);
         showError(err.detail || `Server error: ${res.status}`, err.crawl_errors?.join('\n'));
@@ -400,7 +425,6 @@ async function generate() {
 
     const data = await res.json();
 
-    // Animate steps → done
     showSteps(['done']);
 
     const desc = `${data.site_name} — ${data.site_category} — ${data.pages_crawled} pages`;
@@ -412,12 +436,14 @@ async function generate() {
     }
 
     const dlBtn = document.getElementById('download-btn');
-    dlBtn.href = `/download/${data.filename}`;
+    dlBtn.href = `${API_BASE}/download/${data.filename}`;
     dlBtn.style.display = 'inline-flex';
     document.getElementById('result').classList.add('show');
 
   } catch (e) {
-    if (!e.message.includes('Failed to fetch')) {
+    if (e.message && e.message.includes('Failed to fetch')) {
+      showError('Server not running', 'Start the server first:\n\n  python app.py\n\nThen try again at http://localhost:8888');
+    } else if (!e.message.includes('Failed to fetch')) {
       showError(e.message || 'Unknown error', '');
     }
     showSteps(['step-crawl','step-analyze','step-generate']);
