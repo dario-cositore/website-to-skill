@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Website → Agent Skill | Dario Cositore</title>
+  <meta name="description" content="Convert any website into a Hermes Agent Skill and/or OpenClaw Agent Package. Paste a URL, get a structured agent skill. Open source, MIT licensed.">
+  <style>
+    :root {
+      --bg: #0a0a0a;
+      --surface: #141414;
+      --border: #2a2a2a;
+      --text: #e4e4e4;
+      --text-muted: #888;
+      --accent: #6c5ce7;
+      --accent-hover: #7a6eef;
+      --green: #00d4aa;
+      --orange: #ff8c00;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'SF Mono', 'Fira Code', 'JetBrains Mono', monospace;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 4rem 1.5rem;
+    }
+
+    nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1.5rem 0;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 4rem;
+    }
+
+    nav a {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.85rem;
+      transition: color 0.2s;
+    }
+
+    nav a:hover { color: var(--text); }
+
+    .logo {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .logo span { color: var(--accent); }
+
+    h1 {
+      font-size: 2.4rem;
+      font-weight: 700;
+      line-height: 1.2;
+      margin-bottom: 1rem;
+    }
+
+    h1 .highlight {
+      background: linear-gradient(135deg, var(--accent), var(--green));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .subtitle {
+      font-size: 1.1rem;
+      color: var(--text-muted);
+      margin-bottom: 3rem;
+      max-width: 600px;
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 4rem;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.8rem 1.8rem;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 0.95rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.2s;
+      border: none;
+      cursor: pointer;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: white;
+    }
+
+    .btn-primary:hover { background: var(--accent-hover); transform: translateY(-1px); }
+
+    .btn-secondary {
+      background: transparent;
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+    }
+
+    .btn-secondary:hover { color: var(--text); border-color: var(--text-muted); }
+
+    section {
+      margin-bottom: 4rem;
+    }
+
+    section h2 {
+      font-size: 1.4rem;
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .feature-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    .feature-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.5rem;
+      transition: border-color 0.2s;
+    }
+
+    .feature-card:hover { border-color: var(--accent); }
+
+    .feature-card h3 {
+      font-size: 0.95rem;
+      margin-bottom: 0.5rem;
+      color: var(--green);
+    }
+
+    .feature-card p {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    .code-block {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.5rem;
+      overflow-x: auto;
+      margin: 1rem 0;
+    }
+
+    .code-block code {
+      color: var(--green);
+      font-size: 0.85rem;
+      line-height: 1.8;
+      white-space: pre;
+    }
+
+    .code-block .comment { color: var(--text-muted); }
+    .code-block .string { color: var(--orange); }
+
+    .output-structure {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.5rem;
+      margin: 1rem 0;
+    }
+
+    .output-structure pre {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    .output-structure .folder { color: #ffd700; }
+    .output-structure .file { color: #8be9fd; }
+
+    .badge {
+      display: inline-block;
+      padding: 0.2rem 0.6rem;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .badge-mit { background: #1a3a2a; color: #4ade80; }
+    .badge-python { background: #1a2a3a; color: #60a5fa; }
+    .badge-open { background: #2a1a3a; color: #c084fc; }
+
+    footer {
+      text-align: center;
+      padding: 2rem 0;
+      margin-top: 4rem;
+      border-top: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 0.8rem;
+    }
+
+    footer a { color: var(--accent); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    @media (max-width: 600px) {
+      .feature-grid { grid-template-columns: 1fr; }
+      h1 { font-size: 1.6rem; }
+      .container { padding: 2rem 1rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <nav>
+      <a href="https://dariocositore.com" class="logo"><span>dario</span>cositore.com</a>
+      <div>
+        <a href="https://github.com/dario-cositore/website-to-skill">GitHub</a>
+      </div>
+    </nav>
+
+    <h1>Turn any website into an<br><span class="highlight">Agent Skill</span></h1>
+    <p class="subtitle">
+      Paste a URL → crawl the site → generate a ready-to-deploy
+      <strong>Hermes Agent Skill</strong> and/or <strong>OpenClaw Agent Package</strong>.
+      Fully automated. LLM-powered. Open source.
+    </p>
+
+    <div class="hero-actions">
+      <a href="https://github.com/dario-cositore/website-to-skill" class="btn btn-primary">
+        ⭐ Star on GitHub
+      </a>
+      <a href="https://github.com/dario-cositore/website-to-skill#quick-start" class="btn btn-secondary">
+        🚀 Quick Start
+      </a>
+    </div>
+
+    <section>
+      <h2>⚡ How It Works</h2>
+      <div class="code-block"><code>
+<span class="comment"># Crawl, analyze, generate — one command</span>
+python src/website_to_skill.py \
+  --url https://example.com \
+  --format hermes+openclaw \
+  --output ./my-skill
+      </code></div>
+    </section>
+
+    <section>
+      <h2>🧠 What You Get</h2>
+      <div class="feature-grid">
+        <div class="feature-card">
+          <h3>🌐 Smart Crawling</h3>
+          <p>Recursive sitemap + link following. Respects robots.txt, rate limits, and noindex tags. Filters binary files and stays on-domain.</p>
+        </div>
+        <div class="feature-card">
+          <h3>🧪 LLM Analysis</h3>
+          <p>Classifies the site, extracts workflows, maps interaction points, identifies agent use cases. Works with OpenAI, OpenRouter, or any compatible provider.</p>
+        </div>
+        <div class="feature-card">
+          <h3>⚙️ Hermes Skill</h3>
+          <p>Generates <code>SKILL.md</code> with proper frontmatter, reference docs, and raw-page extracts ready for Hermes Agent.</p>
+        </div>
+        <div class="feature-card">
+          <h3>🎯 OpenClaw Package</h3>
+          <p>Generates <code>PACKAGE.md</code>, <code>SOUL.md</code>, <code>IDENTITY.md</code>, <code>AGENTS.md</code> — a deployable agent package.</p>
+        </div>
+        <div class="feature-card">
+          <h3>🔒 Privacy Safe</h3>
+          <p>Runs locally. No data sent to third parties except your configured LLM provider. Your crawls stay yours.</p>
+        </div>
+        <div class="feature-card">
+          <h3>🐍 Zero Setup</h3>
+          <p>Python 3.11+. Install deps, set your API key, run. No Docker, no build step, no infrastructure.</p>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>📦 Output Structure</h2>
+      <div class="output-structure"><pre>
+<span class="folder">output/</span>
+├── <span class="file">SKILL.md</span>                    ← Hermes skill definition
+├── <span class="file">site-map.md</span>                 ← Crawled site structure
+├── <span class="file">key-actions.md</span>              ← What agents can do
+├── <span class="file">interaction-guide.md</span>        ← How to interact
+├── <span class="file">identity.md</span>                 ← Agent identity
+├── <span class="folder">references/</span>
+│   ├── <span class="folder">raw-pages/</span>            ← Extracted page content
+│   └── <span class="file">analysis.json</span>            ← LLM analysis
+└── <span class="file">PACKAGE.md</span>                  ← OpenClaw manifest
+      </pre></div>
+    </section>
+
+    <section>
+      <h2>🔧 Quick Start</h2>
+      <div class="code-block"><code>
+<span class="comment"># 1. Install deps</span>
+pip install -r requirements.txt
+
+<span class="comment"># 2. Configure your API key</span>
+cp .env.example .env
+<span class="comment"># Edit .env with your OpenAI/OpenRouter key</span>
+
+<span class="comment"># 3. Run it</span>
+python src/website_to_skill.py \
+  --url https://example.com \
+  --format hermes+openclaw \
+  --output ./my-skill
+
+<span class="comment"># Options</span>
+<span class="comment"># --format hermes          → Hermes skill only</span>
+<span class="comment"># --format openclaw        → OpenClaw package only</span>
+<span class="comment"># --provider openrouter    → Custom LLM provider</span>
+<span class="comment"># --model deepseek/deepseek-v4-pro</span>
+<span class="comment"># --max-depth 2            → Crawl depth</span>
+<span class="comment"># --max-pages 50           → Page limit</span>
+      </code></div>
+    </section>
+
+    <section>
+      <h2>🏷️ Tags</h2>
+      <p>
+        <span class="badge badge-python">Python</span>
+        <span class="badge badge-open">Open Source</span>
+        <span class="badge badge-mit">MIT</span>
+        &nbsp;
+        agent-framework &middot; skill-builder &middot; web-scraper &middot; hermes &middot; openclaw &middot; ai-agents &middot; automation &middot; seo
+      </p>
+    </section>
+
+    <footer>
+      <p>
+        Built by <a href="https://dariocositore.com">Dario Cositore</a> ·
+        <a href="https://github.com/dario-cositore/website-to-skill">Source code</a> ·
+        Licensed <a href="./LICENSE">MIT</a>
+      </p>
+      <p style="margin-top: 0.5rem;">⭐ Fork it, break it, build on it.</p>
+    </footer>
+  </div>
+</body>
+</html>
