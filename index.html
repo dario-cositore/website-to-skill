@@ -337,12 +337,9 @@ $ python src/website_to_skill.py --url https://example.com \
 </div>
 
 <script>
-// Detect file:// protocol and warn
 if (location.protocol === 'file:') {
   document.getElementById('file-warning').classList.add('show');
 }
-
-const API_BASE = location.protocol === 'file:' ? 'http://localhost:8888' : '';
 
 let selectedFormat = 'hermes+openclaw';
 
@@ -354,14 +351,13 @@ function setFormat(el) {
 
 function showSteps(steps) {
   const ids = ['step-crawl','step-analyze','step-generate','step-done'];
-  const el = document.getElementById('step-error');
-  el.style.display = 'none';
+  document.getElementById('step-error').style.display = 'none';
   ids.forEach(s => {
     const e = document.getElementById(s);
     e.className = 'step';
     e.querySelector('.step-icon').textContent = '○';
   });
-  steps.forEach((s, i) => {
+  steps.forEach(s => {
     if (s === 'done') {
       ids.forEach(id => {
         document.getElementById(id).classList.add('done');
@@ -378,12 +374,21 @@ function showError(title, detail) {
   document.getElementById('step-error').style.display = 'block';
   document.getElementById('error-msg').textContent = title;
   const det = document.getElementById('error-detail');
-  if (detail) {
-    det.textContent = detail;
-    det.classList.add('show');
-  } else {
-    det.classList.remove('show');
-  }
+  if (detail) { det.textContent = detail; det.classList.add('show'); }
+  else { det.classList.remove('show'); }
+}
+
+// Animate step progress while waiting for the single API call
+function animateSteps(signal) {
+  const steps = ['step-crawl','step-analyze','step-generate'];
+  let i = 0;
+  showSteps([steps[0]]);
+  const timer = setInterval(() => {
+    if (signal.aborted) { clearInterval(timer); return; }
+    i = Math.min(i + 1, steps.length - 1);
+    showSteps(steps.slice(0, i + 1));
+  }, 2200);
+  return timer;
 }
 
 async function generate() {
@@ -406,49 +411,60 @@ async function generate() {
   btn.textContent = '⏳ Generating...';
   statusEl.classList.add('show');
   document.getElementById('result').classList.remove('show');
-  showSteps(['step-crawl','step-analyze','step-generate']);
+
+  const abortCtrl = new AbortController();
+  const stepTimer = animateSteps(abortCtrl.signal);
 
   try {
-    const params = new URLSearchParams({ url, format: selectedFormat, depth, pages });
-    const res = await fetch(`${API_BASE}/generate?${params.toString()}`, { method: 'POST' });
+    const res = await fetch('/api/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url, format: selectedFormat, depth: Number(depth), pages: Number(pages) }),
+    });
+
+    clearInterval(stepTimer);
+    abortCtrl.abort();
 
     if (!res.ok) {
       const body = await res.text();
-      try {
-        const err = JSON.parse(body);
-        showError(err.detail || `Server error: ${res.status}`, err.crawl_errors?.join('\n'));
-      } catch {
-        showError(`Server error: ${res.status}`, body);
-      }
-      throw new Error(body || `Server error: ${res.status}`);
+      let msg = `Server error: ${res.status}`;
+      try { const err = JSON.parse(body); msg = err.error || msg; } catch {}
+      showError(msg, body.length < 300 ? body : '');
+      throw new Error(msg);
     }
 
-    const data = await res.json();
+    // Response is the ZIP blob directly
+    const blob = await res.blob();
+    const disposition = res.headers.get('Content-Disposition') || '';
+    const nameMatch = disposition.match(/filename="([^"]+)"/);
+    const filename = nameMatch ? nameMatch[1] : 'skill.zip';
 
     showSteps(['done']);
 
-    const desc = `${data.site_name} — ${data.site_category} — ${data.pages_crawled} pages`;
-    document.getElementById('result-desc').textContent = desc;
-
-    if (data.crawl_errors && data.crawl_errors.length) {
-      document.getElementById('error-detail').textContent = 'Crawl notes: ' + data.crawl_errors.join('\n');
-      document.getElementById('error-detail').classList.add('show');
-    }
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
 
     const dlBtn = document.getElementById('download-btn');
-    dlBtn.href = `${API_BASE}/download/${data.filename}`;
+    dlBtn.onclick = () => a.click();
+    dlBtn.href = '#';
     dlBtn.style.display = 'inline-flex';
+
+    document.getElementById('result-desc').textContent =
+      filename.replace('-skill.zip', '') + ' — skill package ready';
     document.getElementById('result').classList.add('show');
 
   } catch (e) {
-    if (e.message && e.message.includes('Failed to fetch')) {
-      showError('Server not running', 'Start the server first:\n\n  python app.py\n\nThen try again at http://localhost:8888');
-    } else if (!e.message.includes('Failed to fetch')) {
-      showError(e.message || 'Unknown error', '');
+    clearInterval(stepTimer);
+    abortCtrl.abort();
+    if (e.message?.includes('Failed to fetch') || e.message?.includes('NetworkError')) {
+      showError('API not reachable', 'The /api/generate endpoint is not responding.
+Check that Cloudflare Pages Functions are enabled for this deployment.');
+    } else {
+      showSteps(['step-crawl','step-analyze','step-generate']);
+      document.getElementById('step-crawl').classList.add('failed');
+      document.getElementById('step-crawl').querySelector('.step-icon').textContent = '✗';
     }
-    showSteps(['step-crawl','step-analyze','step-generate']);
-    document.getElementById('step-crawl').classList.add('failed');
-    document.getElementById('step-crawl').querySelector('.step-icon').textContent = '✗';
   } finally {
     btn.disabled = false;
     btn.textContent = '⚡ Generate Skill Package';
